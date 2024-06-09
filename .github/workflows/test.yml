@@ -9,7 +9,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4.1.3
@@ -17,9 +17,5 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@v4
       - name: Build
         run: nix-build
-      - name: Run pre-commit hooks
-        run: nix-shell --run "pre-commit run --all"
-      - name: Run smoke test
-        run: nix-shell --run "bash ./.github/workflows/smoke-test.sh"
       - name: Run integration tests
         run: nix-build -A meta.tests

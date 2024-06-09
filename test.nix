@@ -78,6 +78,7 @@ let
           gitMinimal
           jq
           nix-prefetch-git
+          coreutils
         ];
       }
       ''
@@ -89,8 +90,8 @@ let
         export NIX_LOG_DIR=$TMPDIR
         cd $(mktemp -d)
         ln -s ${gitRepo} $(basename ${repoPath})
-        python -m http.server 8000 &
-        timeout 30 sh -c 'until nc -z 127.0.0.1 8000; do sleep 1; done' || exit 1
+        python -m http.server 9000 &
+        timeout 30 sh -c 'until nc -z 127.0.0.1 9000; do sleep 1; done' || exit 1
 
         ${commands}
 
@@ -114,6 +115,7 @@ let
           nix
           gitMinimal
           jq
+          coreutils
         ];
       }
       ''
@@ -151,7 +153,7 @@ in
     inherit gitRepo;
     commands = ''
       npins init --bare
-      npins add -n git http://localhost:8000/foo -b test-branch
+      npins add -n git http://localhost:9000/foo -b test-branch
 
       V=$(jq -r .pins npins/sources.json)
       [[ "$V" = "{}" ]]
@@ -163,7 +165,7 @@ in
     inherit gitRepo;
     commands = ''
       npins init --bare
-      npins add git http://localhost:8000/foo -b test-branch
+      npins add git http://localhost:9000/foo -b test-branch
       npins show
 
       nix-instantiate --eval npins -A foo.outPath
@@ -178,7 +180,7 @@ in
     };
     commands = ''
       npins init --bare
-      ! npins add git http://localhost:8000/foo
+      ! npins add git http://localhost:9000/foo
     '';
   };
 
@@ -187,10 +189,10 @@ in
     inherit gitRepo;
     commands = ''
       npins init --bare
-      npins add git http://localhost:8000/foo
+      npins add git http://localhost:9000/foo
       cat npins/sources.json
 
-      git ls-remote http://localhost:8000/foo
+      git ls-remote http://localhost:9000/foo
       nix-instantiate --eval npins -A foo.outPath
 
       V=$(jq -r .pins.foo.version npins/sources.json)
@@ -221,7 +223,7 @@ in
           inherit gitRepo;
           commands = ''
             npins init --bare
-            npins add git http://localhost:8000/foo ${npinsArgs}
+            npins add git http://localhost:9000/foo ${npinsArgs}
             before=$(ls /build)
 
             nix-instantiate --eval npins -A foo.outPath.outPath
@@ -241,7 +243,7 @@ in
         let
           flake = pkgs.writeText "flake.nix" ''
             {
-              inputs.foo.url = "git+http://localhost:8000/foo?ref=test-branch";
+              inputs.foo.url = "git+http://localhost:9000/foo?ref=test-branch";
               inputs.foo.flake = false;
               outputs = _: {};
             }
@@ -256,7 +258,7 @@ in
 
             npins init --bare
             npins import-flake
-            git ls-remote http://localhost:8000/foo
+            git ls-remote http://localhost:9000/foo
             nix-instantiate --eval npins -A foo.outPath
 
             cat npins/sources.json
